@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.biubiu.user.mapper.SysLogMapper">
+
+    <insert id="save" parameterType="com.biubiu.user.domain.entity.SysLog">
+        INSERT INTO sys_log(request_method,remote_addr,username,request_url,method,params,
+            message,response,use_time,referer,create_time,valid)
+        VALUES (#{requestMethod},#{remoteAddr},#{username},#{requestUrl},#{method},#{params},
+            #{message},#{response},#{useTime},#{referer},#{createTime},#{valid})
+    </insert>
+
+    <select id="findAll" resultType="com.biubiu.user.domain.entity.SysLog">
+        SELECT * FROM sys_log ORDER BY create_time DESC
+    </select>
+
+    <delete id="delete" parameterType="java.util.Date">
+        DELETE FROM sys_log WHERE create_time <![CDATA[ <= ]]> #{time}
+    </delete>
+
+</mapper>

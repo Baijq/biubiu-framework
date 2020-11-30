@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.biubiu.user.mapper.UserMapper">
+
+    <insert id="saveUser" parameterType="com.biubiu.user.domain.entity.User">
+        INSERT INTO tb_users(name,age,sex,tel,address,create_time,valid,avatar_url)
+        VALUES (#{name},#{age},#{sex},#{tel},#{address},#{createTime},#{valid},#{avatarUrl})
+    </insert>
+
+    <update id="updateUser" parameterType="com.biubiu.user.domain.entity.User">
+        UPDATE tb_users
+        <set>
+            <if test="name!=null">name=#{name},</if>
+            <if test="age!=null">age=#{age},</if>
+            <if test="sex!=null">sex=#{sex},</if>
+            <if test="tel!=null">tel=#{tel},</if>
+            <if test="address!=null">address=#{address},</if>
+            <if test="valid!=null">valid=#{valid},</if>
+            <if test="avatarUrl!=null">avatar_url=#{avatarUrl},</if>
+            <if test="updateTime!=null">update_time=#{updateTime}</if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <select id="findById" resultType="com.biubiu.user.domain.entity.User" parameterType="integer">
+        select * from tb_users t where t.id = #{id}
+    </select>
+
+    <select id="findUser" resultType="com.biubiu.user.domain.entity.User" parameterType="com.biubiu.user.domain.dto.UserDTO">
+        SELECT *
+        FROM tb_users t
+        /*where 1 = 1 也可，where 1=1不会影响性能。sql优化器已经处理过了*/
+        <where>
+            <if test="id!=null">
+                t.id = #{id}
+            </if>
+            <if test="name!=null">
+                and t.name LIKE concat('%',#{name},'%')
+            </if>
+            <if test="tel!=null">
+                and t.tel = #{tel}
+            </if>
+            <if test="valid!=null">
+                and t.valid = #{valid}
+            </if>
+            <if test="startTime != null and endTime != null">
+                <![CDATA[
+                and t.create_time > #{startTime} and t.create_time > #{endTime}
+                ]]>
+            </if>
+        </where>
+    </select>
+
+    <select id="findAll" resultType="com.biubiu.user.domain.entity.User">
+        select * from tb_users
+    </select>
+
+    <delete id="deleteByIds">
+        delete from tb_users t where t.id in
+        <foreach collection="list" index="index" item="item" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+    </delete>
+</mapper>

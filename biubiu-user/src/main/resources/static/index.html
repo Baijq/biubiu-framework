@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户信息</title>
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <script src="https://cdn.bootcdn.net/ajax/libs/axios/0.19.2/axios.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        #app {
+            margin: 0 auto;
+            width: 85%;
+        }
+
+        .add-btn {
+            margin-top: 20px;
+            width: 100%;
+        }
+
+        .body {
+            margin-top: 20px;
+        }
+
+        .demo-input-suffix {
+            width: 25%;
+        }
+
+        .clearfix:before,
+        .clearfix:after {
+            display: table;
+            content: "";
+        }
+
+        .clearfix:after {
+            clear: both
+        }
+
+        .box-card {
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+<div id="app">
+    <h3>用户信息-管理</h3>
+
+    <!--头部-->
+    <div class="head">
+        <!--搜索框-->
+        <div>
+            <div class="demo-input-suffix">
+                <el-input
+                        placeholder="请输入id/姓名查询"
+                        prefix-icon="el-icon-search"
+                        v-model="searchStr"
+                        v-on:keyup.native.enter="submitSearch(searchStr)">
+                </el-input>
+            </div>
+        </div>
+    </div>
+
+    <!-- body -->
+    <div class="body">
+        <el-card class="box-card">
+            <div slot="header" class="clearfix">
+                <span>查询到的用户信息</span>
+                <el-link style="float: right;" type="warning" size="small" @click="dialogFormVisible = true"
+                         icon="el-icon-circle-plus">添加
+                </el-link>
+            </div>
+            <div>
+                <!--:data="tableData"-->
+                <el-table v-if="tb_show"
+                          size="mini"
+                          :data="tableData.filter(data => !search || data.name.toLowerCase().includes(search.toLowerCase()))"
+                          align="center"
+                          style="width: 100%;">
+                    <el-table-column
+                            prop="id"
+                            label="编号">
+                    </el-table-column>
+                    <el-table-column
+                            prop="name"
+                            label="姓名">
+                        <template slot-scope="scope">
+                            <el-popover trigger="hover" placement="top">
+                                <p>姓名：{{ scope.row.name}}</p>
+                                <p>年龄: {{ scope.row.age }}</p>
+                                <p>性别: {{ scope.row.sex === 1 ? '男' : '女' }}</p>
+                                <div slot="reference" class="name-wrapper">
+                                    <el-tag size="medium">{{ scope.row.name }}</el-tag>
+                                </div>
+                            </el-popover>
+                        </template>
+                    </el-table-column>
+                    <el-table-column
+                            prop="valid"
+                            label="状态">
+                        <template slot-scope="scope">
+                            {{ scope.row.valid === 0 ? '离职' : '在职' }}
+                        </template>
+                    </el-table-column>
+                    <el-table-column
+                            prop="tel"
+                            label="电话">
+                    </el-table-column>
+                    <el-table-column
+                            prop="address"
+                            label="地址">
+                    </el-table-column>
+                    <el-table-column
+                            prop="createTime"
+                            label="日期">
+                    </el-table-column>
+                    <el-table-column
+                            prop="option"
+                            align="center"
+                            label="操作">
+                        <template slot="header" slot-scope="scope">
+                            <el-input
+                                    v-model="search"
+                                    size="mini"
+                                    placeholder="输入姓名搜索"/>
+                        </template>
+                        <template slot-scope="scope">
+                            <el-button type="primary" size="small" icon="el-icon-edit"
+                                       @click="editUser(scope.row, scope.$index)" circle></el-button>
+                            <el-button type="danger" size="small" icon="el-icon-delete"
+                                       @click.native.prevent="delUser(scope.row, scope.$index, tableData)" circle></el-button>
+                        </template>
+                    </el-table-column>
+                </el-table>
+            </div>
+        </el-card>
+
+    </div>
+
+
+    <!--修改-->
+    <el-dialog
+            title="编辑用户信息"
+            :visible.sync="dialogVisible"
+            width="30%"
+            :before-close="handleClose">
+        <div>
+            <el-form :model="editObj" label-width="80px">
+                <el-form-item label="电话" :label-width="formLabelWidth">
+                    <el-input v-model="editObj.tel" autocomplete="off"></el-input>
+                </el-form-item>
+                <el-form-item label="地址" :label-width="formLabelWidth">
+                    <el-select v-model="editObj.address" placeholder="请选择地址">
+                        <el-option label="区域一" value="shanghai"></el-option>
+                        <el-option label="区域二" value="beijing"></el-option>
+                    </el-select>
+                </el-form-item>
+                <el-form-item label="状态" :label-width="formLabelWidth">
+                    <el-switch
+                            v-model="editObj.valid"
+                            active-color="#13ce66"
+                            inactive-color="#ff4949"
+                            active-value="1"
+                            inactive-value="0">
+                    </el-switch>
+                </el-form-item>
+            </el-form>
+        </div>
+        <div slot="footer" class="dialog-footer">
+            <el-button @click="dialogVisible = false">取 消</el-button>
+            <el-button type="primary" @click="confirm">确 定</el-button>
+        </div>
+    </el-dialog>
+
+    <!--添加-->
+</div>
+
+<script src="https://unpkg.com/vue/dist/vue.js"></script>
+<script src="https://unpkg.com/element-ui/lib/index.js"></script>
+<script>
+    new Vue({
+        el: '#app',
+        data: {
+            searchStr: '',
+            table_empty_text: '',
+            tableData: [{
+                id: '',
+                name: '',
+                age: '',
+                sex: '',
+                tel: '',
+                address: '',
+                valid: ''
+            }],
+            search: '',
+            staff: [{ // 添加的用户信息
+                companyCode: '',
+                staffNo: '',
+                domainAccount: '',
+                cnName: '',
+                mobile: '',
+                status: '',
+                title: '',
+                deptName: '',
+                entryTime: ''
+            }],
+            editObj: {
+                id: '',
+                name: '',
+                age: '',
+                sex: '',
+                tel: '',
+                address: '',
+                valid: ''
+            },
+            dialogVisible: false,//是否显示修改用户的弹框
+            userIndex: 0,
+            fileList: [],
+            tb_show: false,
+            dialogFormVisible: false,
+            formLabelWidth: '80px'
+        },
+        methods: {
+            submitSearch(searchStr) {//通过关键字搜索
+                var _this = this;
+                axios.get('/api/user/' + searchStr, {
+                    params: {}
+                }).then(res => {
+                    if (res.data.success) {
+                        this.tableData = res.data.data;
+                        this.tb_show = true
+                    } else {
+                        console.log(res.data.message)
+                        this.tb_show = false
+                    }
+                })
+            },
+            editUser: function (item, index) {//编辑数据
+                console.log(item.valid)
+                this.userIndex = index;
+                this.editObj = {
+                    id: item.id,
+                    name: item.name,
+                    age: item.age,
+                    sex: item.sex,
+                    tel: item.tel,
+                    address: item.address,
+                    valid: item.valid
+                }
+                this.dialogVisible = true;
+            },
+            delUser: function (item, index, rows) {
+                ///console.log(item)
+                this.userIndex = index;
+                this.$confirm('此操作将永久删除该用户, 是否继续?', '提示', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    type: 'warning'
+                }).then(() => {
+                    axios.delete('/api/user', {
+                        params: {	// 请求参数拼接在url上
+                            id: item.id
+                        }
+                    }).then(res => {
+                        //console.log(res)
+                        if (res.data.success) {
+                            rows.splice(index, 1);
+                        }
+                    })
+                }).catch(() => {
+                    this.$message({
+                        type: 'info',
+                        message: '已取消删除'
+                    });
+                });
+            },
+            handleClose: function () {
+                this.dialogVisible = false;
+            },
+            confirm: function () {
+                //console.log(JSON.stringify(this.editObj))
+                this.$confirm('此操作将永久修改该用户, 是否继续?', '提示', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    type: 'warning'
+                }).then(() => {
+                    axios.put('/api/user/', this.editObj).then(res => {
+                        if (res.data.success) {
+                            this.$message({
+                                type: 'info',
+                                message: '修改成功！'
+                            });
+                            axios.get('/api/user/').then(res => {
+                                if (res.data.data) {
+                                    this.tableData = res.data.data;
+                                    this.tb_show = true
+                                }
+                            })
+                        } else {
+                            this.$message({
+                                type: 'info',
+                                message: '修改失败！'
+                            });
+                        }
+                    })
+                }).catch(() => {
+                    this.$message({
+                        type: 'info',
+                        message: '已取消修改'
+                    });
+                });
+                this.dialogVisible = false;
+            },
+
+            handleRemove(file, fileList) {
+                console.log(file, fileList);
+            },
+            handlePreview(file) {
+                console.log(file);
+            },
+            handleExceed(files, fileList) {
+                this.$message.warning(`当前限制选择 3 个文件，本次选择了 ${files.length} 个文件，共选择了 ${files.length + fileList.length} 个文件`);
+            },
+            beforeRemove(file, fileList) {
+                return this.$confirm(`确定移除 ${file.name}？`);
+            }
+        },
+        mounted: function () {
+            var _this = this;
+            axios({
+                method: 'get',
+                url: '/api/user/',
+                params: {}, // 请求参数拼接在url上
+                data: {}  // 请求参数放在请求体
+            }).then(res => {
+                if (res.data.data) {
+                    let userInfo = res.data.data;
+                    this.tableData = userInfo;
+                    this.tb_show = true
+                }
+            })
+        }
+    });
+</script>
+</body>
+</html>
